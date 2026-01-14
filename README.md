@@ -1,9 +1,9 @@
 ### PNAD_2024_1Visita
 
-Geração de Indicadores de Moradores sem Energia Elétrica (PNAD Contínua)
 Objetivo
 Este script calcula o total de moradores que não possuem ou não utilizam energia elétrica com base nos microdados da PNAD Contínua 2024 – 1ª visita, utilizando o pacote PNADcIBGE e o desenho amostral da pesquisa.
 Principais Etapas
+
 
 Carregamento de pacotes
 
@@ -42,10 +42,14 @@ svyby() para estimar:
 Moradores sem energia (svytotal).
 Total de moradores (denominador).
 
+
+
 Junção e agregação
 
 Totais por UF.
 Detalhamento por UF e situação (V1022).
+
+
 
 Exportação para Excel
 
@@ -55,13 +59,13 @@ Abas:
 Totais_por_UF
 Detalhamento_UF_Situacao
 
+
 Saída
 
 Arquivo Excel com duas abas:
 
 Totais_por_UF: agregação por Unidade da Federação.
 Detalhamento_UF_Situacao: valores por UF e situação (urbano/rural).
-
 
 
 Observações

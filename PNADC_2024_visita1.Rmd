@@ -1,0 +1,84 @@
+---
+title: "PNAD_2024_1_Visita"
+author: "Vinicius G. Santos"
+date: "2026-01-14"
+output: html_document
+---
+
+1)Arquivos:
+
+Microdados: PNADC_2024_visita1.txt
+Input: input_PNADC_2024_visita1_20251119.txt
+Dicionário: dicionario_PNADC_microdados_2024_visita1_20251119.xls
+
+2)Passos:
+
+Ler os microdados com read_pnadc().
+Rotular variáveis com pnadc_labeller().
+Criar o desenho amostral com pnadc_design().
+Calcular moradores sem energia elétrica (S01014 == 2) por UF e situação (urbana/rural).
+Exportar para CSV.
+
+```{r}
+
+library(PNADcIBGE)
+library(survey)
+library(dplyr)
+library(readr)
+library(writexl)
+library(stringi)
+
+options(survey.lonely.psu = "adjust")
+
+# Caminhos
+base_dir <- "C:\\Users\\u345129\\OneDrive - IBERDROLA S.A\\Documentos\\ARQUIVOS_INDIVIDUAIS\\Vinicius G. Santos\\21.SYGRIS\\2025\\4_EU26_IBGE_OK\\FINAL\\Microdados"
+arq_micro <- file.path(base_dir, "PNADC_2024_visita1.txt")
+arq_input <- file.path(base_dir, "input_PNADC_2024_visita1_20251119.txt")
+arq_dic   <- file.path(base_dir, "dicionario_PNADC_microdados_2024_visita1_20251119.xls")
+
+# Ler e rotular
+pnad_df <- read_pnadc(arq_micro, arq_input)
+pnad_df <- pnadc_labeller(pnad_df, arq_dic)
+
+# Desenho amostral
+des <- pnadc_design(pnad_df)
+
+# Indicador robusto
+normlab <- function(x) stri_trans_general(as.character(x), "Latin-ASCII") |> tolower() |> trimws()
+padroes_nao_tem <- c("nao utiliza/tem energia eletrica","nao tem energia","sem energia")
+val_norm <- normlab(pnad_df$S01014)
+indic_sem <- val_norm %in% padroes_nao_tem | grepl("nao utiliza|nao tem|sem energia", val_norm)
+des <- update(des, sem_energia = as.integer(indic_sem), one = 1)
+
+# Totais por UF x Situação
+res_tot <- svyby(~sem_energia, ~UF + V1022, des, svytotal, na.rm = TRUE)
+names(res_tot)[names(res_tot) == "sem_energia"] <- "Moradores_sem_energia"
+
+# Denominador
+res_base <- svyby(~one, ~UF + V1022, des, svytotal, na.rm = TRUE) |> rename(Total_moradores = one)
+
+# Junção final
+res_final <- res_tot |> left_join(res_base, by = c("UF","V1022")) |> arrange(UF,V1022)
+
+# ABA 1: Totais por UF
+totais_por_uf <- res_final |>
+  group_by(UF) |>
+  summarise(Moradores_sem_energia = sum(Moradores_sem_energia, na.rm = TRUE),
+            Total_moradores = sum(Total_moradores, na.rm = TRUE),
+            .groups = "drop")
+
+# ABA 2: Detalhamento com valores e situação correta
+detalhamento <- res_final |>
+  mutate(Situacao = as.character(V1022)) |>  # usa rótulo original
+  select(UF, Situacao, Moradores_sem_energia, Total_moradores)
+
+# Exportar Excel
+out_xlsx <- file.path(base_dir, "moradores_sem_energia_2024_visita1.xlsx")
+write_xlsx(list(Totais_por_UF = totais_por_uf,
+                Detalhamento_UF_Situacao = detalhamento),
+           path = out_xlsx)
+
+message("Arquivo Excel gerado em: ", out_xlsx)
+
+```
+

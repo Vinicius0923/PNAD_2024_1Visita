@@ -73,7 +73,7 @@ detalhamento <- res_final |>
   select(UF, Situacao, Moradores_sem_energia, Total_moradores)
 
 # Exportar Excel
-out_xlsx <- file.path(base_dir, "moradores_sem_energia_2024_visita1.xlsx")
+out_xlsx <- file.path(base_dir, "EU26_C_Sem Energia_2024.xlsx")
 write_xlsx(list(Totais_por_UF = totais_por_uf,
                 Detalhamento_UF_Situacao = detalhamento),
            path = out_xlsx)
